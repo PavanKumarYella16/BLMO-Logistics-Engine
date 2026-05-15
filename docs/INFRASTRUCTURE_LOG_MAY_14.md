@@ -1,35 +1,27 @@
-Infrastructure Log: May 14, 2026
-Project: BLMO-Logistics-Engine
+# 🛠️ Infrastructure Log: May 14, 2026
+**Project:** SmartRoute Dispatcher (BLMO-Logistics-Engine)
+**Engineer:** Pavan Kumar Yella
 
-Engineer: Pavan Kumar Yella
+## Phase 1: Git Core Installation & Configuration
+Installed Git for Windows v2.54.0 with production-grade configurations:
+* **Default Branch:** Set to `main` for modern GitHub compatibility.
+* **Editor Integration:** Linked to VS Code for seamless commit messaging.
+* **PATH Environment:** Enabled for 3rd-party integration (PowerShell/Python).
+* **Line Endings:** Configured as *Checkout Windows-style, commit Unix-style* to prevent cross-platform formatting errors (CRLF vs LF).
+* **Authentication:** Enabled Git Credential Manager for secure, automated GitHub logins.
 
-Phase 1: Git Core Installation
-Installed Git for Windows v2.54.0 with specific production-grade configurations:
+## Phase 2: Repository Architecture & File System
+Initialized the local repository and structured the project for a scalable Data Engineering workflow:
+* **/Data:** To store raw logistics datasets (e.g., `shipments.csv`).
+* **/docs:** For permanent technical logs and thesis notes.
+* **main.py:** Root execution script for Python logic.
+* **.gitignore:** Configured to exclude `.venv/` and `__pycache__/` to ensure repository cleanliness.
 
-Default Branch: Set to main for GitHub compatibility.
+## Phase 3: Identity & Cloud Synchronization
+* **Global Identity:** Configured for professional attribution.
+* **Initial Commit:** Successfully executed root commit (`255e8a9`).
+* **Conflict Resolution:** Addressed `fatal: refusing to merge unrelated histories` during initial `git pull`. 
+    * *Fix:* Used `--allow-unrelated-histories` to bridge the local environment with the GitHub-generated README.
 
-Editor: Linked to VS Code for advanced script editing.
-
-PATH: Enabled for 3rd-party software to ensure PowerShell and Python integration.
-
-Line Endings: Configured as Checkout Windows-style, commit Unix-style to prevent formatting errors across different Operating Systems.
-
-Authentication: Enabled Git Credential Manager for secure, automated GitHub logins.
-
-Phase 2: Repository Architecture
-Initialized the local repository and structured the project for a Data Engineering workflow:
-
-/etl: For Python transformation logic.
-
-/data: To store logistics datasets.
-
-/scripts: For SQL and automation utilities.
-
-/docs: For thesis notes and this setup log.
-
-requirements.txt: To manage Python library dependencies.
-
-Phase 3: Identity & Initialization
-Global identity configured for professional attribution.
-
-Successfully executed the root commit (255e8a9).
+---
+**Status:** Infrastructure Verified & Synced to Cloud.

@@ -1,43 +1,49 @@
-# 📑 Daily Project Status & Developer Journal
-**Project:** Logistics Data Engine (Master's Thesis)
+# 📑 Logistics Data Engine | Developer Journal
+**Project:** SmartRoute Dispatcher (Master's Thesis)
 **Developer:** Pavan Kumar Yella
 
 ---
 
-## 🗓️ Session 1: Pipeline Foundation & Automation
-**Date:** May 15, 2026
+## 📅 May 15, 2026: Pipeline Foundation & Automation
+**Current Focus:** ETL Logic, Data Validation, and Cloud Sync.
 
 ### 1. 🏗️ The Infrastructure (The "Where")
-* **VS Code:** Set up as the primary coding environment.
-* **Virtual Environment (.venv):** Created a private "bubble" to install `pandas` (for data) and `matplotlib` (for charts) so they don't mess up other computer settings.
-* **Terminal:** Learned to use the command line to run the code (`python main.py`) and talk to GitHub.
+* **Virtual Environment (.venv):** Created a private "bubble" for `pandas` and `matplotlib` to ensure stability.
+* **Terminal Mastery:** Used CLI for execution (`python main.py`) and version control.
 
 ### 2. 🐍 The Python Engine (The "How")
-We built the `main.py` using a professional **ETL** structure:
+Built `main.py` using a professional **ETL (Extract, Transform, Load)** structure:
+* **Extraction:** Python loads `data/shipments.csv` into a DataFrame.
+* **Validation:** Automated "Cleaner" removes negative weights or missing cities to ensure Data Integrity.
+* **Transformation:** Implemented Priority Logic (Weight > 500kg = 'High Priority').
+* **Analysis:** Automated calculation of KPIs (Average, Max, and Count).
+* **Visualization:** Generates `shipment_chart.png` automatically using `matplotlib`.
 
-* **Extraction (`load_data`):** Python opens `data/shipments.csv`. It converts the text file into a "DataFrame" (a digital table Python can read).
-* **Validation (`validate_data`):** We added a "Cleaner." It automatically deletes rows with negative weights or missing cities. 
-    * *Why?* To prevent errors in the final thesis report.
-* **Transformation (`transform_logistics_data`):** We added logic. 
-    * *Logic:* If weight > 500kg, assign 'High Priority'. Otherwise, 'Standard'.
-* **Analysis (`calculate_kpis`):** Python calculates the Average, Max, and Count of shipments.
-* **Visualization (`create_visuals`):** Uses the `matplotlib` library to draw a bar chart and save it as `shipment_chart.png`.
-
-### 3. ☁️ The Cloud Backup (The "Safe-Keep")
-We connected the local project to **GitHub** to ensure the thesis is never lost.
-* **git init:** Started tracking the folder.
-* **git remote add:** Linked the laptop folder to the GitHub URL.
-* **git pull:** Synchronized the online README with the local code.
-* **git push:** Uploaded `main.py` and the data folder to the cloud.
+### 3. 🚀 Upcoming Real-World Challenges (Strategic Roadmap)
+To reach a Master's Thesis standard, the engine will evolve to solve these industrial "Pain Points":
+* **Resource Optimization:** Vehicle-to-Load matching (avoiding under-utilized van space).
+* **Dynamic Routing:** Solving the "Last-Mile" density problem in Berlin districts.
+* **Sustainability Tracking:** $CO_2$ emission calculations per shipment.
+* **Financial Analysis:** "Cost-per-Delivery" metrics for profitability tracking.
 
 ---
 
-## 🚀 How the Application Runs (Step-by-Step)
-1.  **Input:** You place a CSV file in the `/data` folder.
-2.  **Trigger:** You type `python main.py` in the terminal.
-3.  **Process:** * Python loads the data.
-    * It scrubs away bad data (Validation).
-    * It labels shipments by priority (Transformation).
-    * It calculates statistics (KPIs).
-4.  **Output:** * The terminal prints a summary report.
-    * A new image file `shipment_chart.png` is created/updated.
+## 📅 May 14, 2026: Infrastructure & Cloud Integration
+**Goal:** Establishing the professional foundation.
+
+### ✅ Completed:
+* **Environment:** Configured Python 3.x and VS Code on Windows.
+* **Version Control:** Initialized Git and connected to GitHub (`git remote add origin`).
+* **Conflict Resolution:** Resolved "unrelated histories" merge error to sync local and cloud README files.
+* **Architecture:** Created `/Data` (Inputs) and `/docs` (Technical Archives) directory structure.
+
+---
+
+## ⚙️ How the Application Runs (The Logic Flow)
+1. **Input:** Raw `shipments.csv` is placed in `/data`.
+2. **Trigger:** `python main.py` executed in terminal.
+3. **Process:** Data is scrubbed, prioritized, and analyzed.
+4. **Output:** Terminal prints a summary report; `shipment_chart.png` is updated.
+
+---
+*Generated for Master of Industrial Engineering & Int. Management | Hochschule Fresenius*

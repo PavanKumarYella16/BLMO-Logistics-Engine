@@ -1,0 +1,4 @@
+id,origin,destination,weight
+1,Berlin,Munich,450
+2,Hamburg,Berlin,120
+3,Stuttgart,Cologne,800

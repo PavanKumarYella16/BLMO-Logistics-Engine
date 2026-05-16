@@ -2,6 +2,8 @@ import pandas as pd
 import os
 import config
 import matplotlib.pyplot as plt
+# 1. Import your brand new Database Manager class
+from database_manager import LogisticsDBManager
 
 def load_data(filename):
     """Extraction: Reads CSV from the data folder."""
@@ -10,9 +12,7 @@ def load_data(filename):
 
 def validate_data(df):
     """Quality Control: Removes negative weights or missing destinations."""
-    # Ensure weight is a positive number
     df = df[df['weight'] >= 0]
-    # Remove rows where crucial info is missing
     df = df.dropna(subset=['destination', 'weight'])
     print("\n[STEP 1] Validation: Data quality check complete.")
     return df
@@ -68,6 +68,48 @@ def main():
         print("\n--- Processed Data Preview ---")
         print(full_df)
         
+    # =====================================================================
+        # 🗄️ STEP 5: LIVE DATABASE STREAMING DEMO (POSTGRESQL)
+        # =====================================================================
+        print("\n[STEP 4] Database Integration: Connecting to PostgreSQL...")
+        
+        # Set up PostgreSQL connection parameters dynamically using your config file
+        DB_HOST = "localhost"
+        DB_USER = "postgres"                
+        DB_PASSWORD = config.DB_PASSWORD     # 🔒 Password hidden safely inside config!
+        DB_DATABASE = "thesis_demo_db"    
+        
+        db = LogisticsDBManager(DB_HOST, DB_USER, DB_PASSWORD, DB_DATABASE)
+        db.connect()
+        
+        if db.connection:
+            # Automatically build/verify the Phase 2 schema tables and dummy parent rows
+            db.initialize_schema()
+            
+            print("\n🔄 Streaming optimized dataframe records into PostgreSQL...")
+            
+            # Loop through your actual processed pandas dataframe rows!
+            for index, row in full_df.iterrows():
+                # Convert categorical 'High' / 'Standard' into system integers
+                priority_val = 1 if row['priority'] == 'High' else 2
+                
+                # Simulated assignment IDs for this data pipeline loop
+                simulated_driver_id = 1
+                simulated_destination_id = index + 1  
+                
+                # Pass each record cleanly through our database guardrail check
+                db.verify_and_insert_order(
+                    weight=float(row['weight']),
+                    priority=priority_val,
+                    driver_id=simulated_driver_id,
+                    dest_id=simulated_destination_id
+                )
+                
+            db.close_connection()
+            print("\n🏁 Pipeline execution complete. Data stream closed cleanly.")
+        else:
+            print("❌ Database connection failed. Skipping data stream.")
+            
     except FileNotFoundError:
         print("Critical Error: 'shipments.csv' missing from the 'data' folder.")
     except Exception as e:

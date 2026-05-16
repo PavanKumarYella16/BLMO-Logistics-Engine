@@ -1,5 +1,5 @@
-import mysql.connector
-from mysql.connector import Error
+import psycopg2
+from psycopg2 import extensions
 
 class LogisticsDBManager:
     def __init__(self, host, user, password, database):
@@ -10,102 +10,147 @@ class LogisticsDBManager:
         self.connection = None
 
     def connect(self):
+        """Establishes connection to the PostgreSQL server and ensures the database exists."""
         try:
-            self.connection = mysql.connector.connect(
-                host=self.host, user=self.user, password=self.password, database=self.database
+            # 1. Connect to default 'postgres' database first to check/create your custom DB
+            conn = psycopg2.connect(
+                host=self.host,
+                user=self.user,
+                password=self.password,
+                database="postgres"  # Default administrative DB
             )
-            if self.connection.is_connected():
-                print("Successfully connected to the enterprise logistics database.")
-        except Error as e:
-            print(f"Database connection initialization failed: {e}")
+            # Postgres requires autocommit to be True to run CREATE DATABASE statements
+            conn.set_isolation_level(extensions.ISOLATION_LEVEL_AUTOCOMMIT)
+            cursor = conn.cursor()
+            
+            # Check if our target database already exists
+            cursor.execute(f"SELECT 1 FROM pg_catalog.pg_database WHERE datname = '{self.database}';")
+            exists = cursor.fetchone()
+            
+            if not exists:
+                cursor.execute(f"CREATE DATABASE {self.database};")
+                print(f"📦 Created new PostgreSQL database: '{self.database}'")
+                
+            cursor.close()
+            conn.close()
+
+            # 2. Now connect directly to your target thesis database
+            self.connection = psycopg2.connect(
+                host=self.host,
+                user=self.user,
+                password=self.password,
+                database=self.database
+            )
+            print(f"✅ Successfully connected to PostgreSQL database: '{self.database}'")
+        except Exception as err:
+            print(f"PostgreSQL connection initialization failed: {err}")
             self.connection = None
 
     def initialize_schema(self):
-        if not self.connection or not self.connection.is_connected():
-            print("No active connection. Cannot initialize schema.")
+        """Creates parent and child tables with strict table-level constraints."""
+        if not self.connection:
+            print("❌ No active database connection to initialize schema.")
             return
 
-        cursor = self.connection.cursor()
-        
-        create_drivers_table = """
-        CREATE TABLE IF NOT EXISTS Drivers (
-            driver_id INT AUTO_INCREMENT,
-            driver_name VARCHAR(100) NOT NULL,
-            vehicle_type VARCHAR(50) DEFAULT 'E-Bike',
-            current_status VARCHAR(20) DEFAULT 'Available',
-            PRIMARY KEY (driver_id)
-        ) ENGINE=InnoDB;
-        """
-
-        create_destinations_table = """
-        CREATE TABLE IF NOT EXISTS Destinations (
-            destination_id INT AUTO_INCREMENT,
-            postal_code VARCHAR(10) NOT NULL,
-            distance_km DECIMAL(5,2) NOT NULL,
-            traffic_zone_factor DECIMAL(3,2) DEFAULT 1.00,
-            PRIMARY KEY (destination_id)
-        ) ENGINE=InnoDB;
-        """
-
-        create_orders_table = """
-        CREATE TABLE IF NOT EXISTS Orders (
-            order_id INT AUTO_INCREMENT,
-            weight_kg DECIMAL(5,2) NOT NULL,
-            priority_level INT DEFAULT 1,
-            driver_id INT,
-            destination_id INT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            PRIMARY KEY (order_id),
-            CONSTRAINT fk_order_driver FOREIGN KEY (driver_id) REFERENCES Drivers(driver_id) ON DELETE SET NULL,
-            CONSTRAINT fk_order_destination FOREIGN KEY (destination_id) REFERENCES Destinations(destination_id) ON DELETE RESTRICT
-        ) ENGINE=InnoDB;
-        """
-
         try:
-            cursor.execute(create_drivers_table)
-            cursor.execute(create_destinations_table)
-            cursor.execute(create_orders_table)
-            self.connection.commit()
-            print("🏁 Phase 2 Enterprise Schema initialized successfully without errors.")
-        except Error as e:
-            print(f"Error executing schema initialization DDL: {e}")
-            self.connection.rollback()
-        finally:
-            cursor.close()
-
-    # PASTED RIGHT HERE INSIDE THE SAME CLASS
-    def verify_and_insert_order(self, weight, priority, driver_id, dest_id):
-        """Validates parent records exist before creating the child record."""
-        cursor = self.connection.cursor()
-        
-        # Check if parent keys exist
-        cursor.execute("SELECT driver_id FROM Drivers WHERE driver_id = %s", (driver_id,))
-        if not cursor.fetchone():
-            print(f"❌ Transaction Blocked: Parent Driver ID {driver_id} missing. Avoided Error 1452.")
-            return False
+            cursor = self.connection.cursor()
             
-        cursor.execute("SELECT destination_id FROM Destinations WHERE destination_id = %s", (dest_id,))
-        if not cursor.fetchone():
-            print(f"❌ Transaction Blocked: Parent Destination ID {dest_id} missing. Avoided Error 1452.")
-            return False
+            # 1. Create Parent Table: Drivers
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS Drivers (
+                    driver_id SERIAL,
+                    driver_name VARCHAR(100) NOT NULL,
+                    CONSTRAINT pk_drivers PRIMARY KEY (driver_id)
+                );
+            """)
 
-        # Safe to execute insertion once parent integrity is verified
-        insert_query = """
-        INSERT INTO Orders (weight_kg, priority_level, driver_id, destination_id)
-        VALUES (%s, %s, %s, %s)
-        """
-        try:
-            cursor.execute(insert_query, (weight, priority, driver_id, dest_id))
+            # 2. Create Parent Table: Destinations
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS Destinations (
+                    dest_id SERIAL,
+                    city_name VARCHAR(100) NOT NULL,
+                    CONSTRAINT pk_destinations PRIMARY KEY (dest_id)
+                );
+            """)
+
+            # 3. Create Child Table: Orders (with structural Table-Level FK constraints)
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS Orders (
+                    order_id SERIAL,
+                    weight NUMERIC(10, 2) NOT NULL,
+                    priority_level INT NOT NULL,
+                    driver_id INT NOT NULL,
+                    dest_id INT NOT NULL,
+                    CONSTRAINT pk_orders PRIMARY KEY (order_id),
+                    CONSTRAINT fk_orders_drivers FOREIGN KEY (driver_id) REFERENCES Drivers(driver_id),
+                    CONSTRAINT fk_orders_destinations FOREIGN KEY (dest_id) REFERENCES Destinations(dest_id)
+                );
+            """)
+            
             self.connection.commit()
-            print(f"⚡ Order successfully committed to production database state.")
-            return True
-        except Error as e:
-            print(f"Database insertion failed: {e}")
-            return False
-        finally:
             cursor.close()
+            print("🗄️ Relational database schema verified and ready.")
+            
+            # 💡 DEMO AUTO-SEED: Let's automatically insert a dummy driver and destination
+            # so your demo script runs successfully on row 1!
+            self._seed_demo_data()
+
+        except Exception as e:
+            print(f"❌ Error setting up schema tables: {e}")
+            self.connection.rollback()
+
+    def _seed_demo_data(self):
+        """Helper to inject default records so parent tables aren't completely blank."""
+        try:
+            cursor = self.connection.cursor()
+            # Ensure at least Driver ID 1 exists
+            cursor.execute("INSERT INTO Drivers (driver_id, driver_name) VALUES (1, 'Default Fleet Driver') ON CONFLICT (driver_id) DO NOTHING;")
+            # Ensure at least Destination ID 1 exists
+            cursor.execute("INSERT INTO Destinations (dest_id, city_name) VALUES (1, 'Berlin HQ') ON CONFLICT (dest_id) DO NOTHING;")
+            self.connection.commit()
+            cursor.close()
+        except Exception:
+            self.connection.rollback()
+
+    def verify_and_insert_order(self, weight, priority, driver_id, dest_id):
+        """Applies programmatic parent validation to intercept foreign key violations gracefully."""
+        if not self.connection:
+            return
+
+        try:
+            cursor = self.connection.cursor()
+            
+            # Step A: Live check if parent keys exist before inserting
+            cursor.execute("SELECT 1 FROM Drivers WHERE driver_id = %s;", (driver_id,))
+            driver_exists = cursor.fetchone()
+            
+            cursor.execute("SELECT 1 FROM Destinations WHERE dest_id = %s;", (dest_id,))
+            dest_exists = cursor.fetchone()
+            
+            # Step B: Guardrail intercept logic
+            if not driver_exists or not dest_exists:
+                print(f"⚠️  [GUARDRAIL BLOCKED] Cannot insert Order. Parent reference missing: "
+                      f"Driver ID {driver_id} exists? {bool(driver_exists)} | "
+                      f"Destination ID {dest_id} exists? {bool(dest_exists)}")
+                cursor.close()
+                return
+
+            # Step C: Safe insert execution
+            query = """
+                INSERT INTO Orders (weight, priority_level, driver_id, dest_id)
+                VALUES (%s, %s, %s, %s);
+            """
+            cursor.execute(query, (weight, priority, driver_id, dest_id))
+            self.connection.commit()
+            print(f"📥 Order successfully saved to DB (Weight: {weight}kg, Priority Level: {priority})")
+            cursor.close()
+
+        except Exception as e:
+            print(f"❌ Transaction failed inside database row handler: {e}")
+            self.connection.rollback()
 
     def close_connection(self):
-        if self.connection and self.connection.is_connected():
+        """Gracefully closes down the communication socket."""
+        if self.connection:
             self.connection.close()
-            print("Database connection gracefully terminated.")
+            print("🔌 PostgreSQL database connection disconnected cleanly.")
